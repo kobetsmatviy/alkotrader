@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alkotrader Terminal</title>
+<style>
+  body {
+    background-color: #000;
+    color: #00ff88;
+    font-family: 'Inconsolata', monospace;
+    font-size: 16px;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+  .line {
+    opacity: 0;
+    white-space: pre;
+  }
+  .visible {
+    opacity: 1;
+    transition: opacity 0.2s ease-in;
+  }
+  #cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background-color: #00ff88;
+    margin-left: 4px;
+    animation: blink 1s step-start infinite;
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="terminal"></div>
+<div id="cursor"></div>
+
+<audio id="a1" src="audio/mentor1.mp3"></audio>
+<audio id="a2" src="audio/mentor2.mp3"></audio>
+<audio id="a3" src="audio/mentor3.mp3"></audio>
+
+<script>
+const terminal = document.getElementById('terminal');
+const cursor = document.getElementById('cursor');
+const quotes = [
+  'Quote: "If you need to think — you\'re already late."',
+  'Quote: "Exchanges don\'t crash. They reveal your assumptions."',
+  'Quote: "Latency is truth."',
+  'Quote: "Speed hides everything, until it doesn\'t."'
+];
+const initialLines = [
+  '[00:00:00.001] Connecting to Alkotrader Terminal',
+  '[00:00:00.512] Link established.',
+  '[00:00:01.018] Ping: 0.5ms',
+  '[00:00:01.522] Loading alkotrader wisdom cache...',
+  '[00:00:01.714] Quote: "Markets are drunk. Stay sober."',
+  '[00:00:01.790] Scroll to load more ↓'
+];
+
+let lineIndex = 0;
+
+function appendLine(text) {
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.textContent = text;
+  terminal.appendChild(line);
+  setTimeout(() => line.classList.add('visible'), 50);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function playSequence() {
+  const a1 = document.getElementById('a1');
+  const a2 = document.getElementById('a2');
+  const a3 = document.getElementById('a3');
+  a1.play();
+  a1.onended = () => setTimeout(() => a2.play(), 1500);
+  a2.onended = () => setTimeout(() => a3.play(), 2000);
+}
+
+function addInitialLines() {
+  initialLines.forEach((l, i) => {
+    setTimeout(() => appendLine(l), i * 600);
+  });
+}
+
+function loadMore() {
+  if (lineIndex < quotes.length) {
+    const t = `[00:00:02.${100 + lineIndex * 400}] ${quotes[lineIndex]}`;
+    appendLine(t);
+    lineIndex++;
+    if (lineIndex === quotes.length) {
+      setTimeout(() => {
+        appendLine('[00:00:04.000] [Audio signal detected...]');
+        playSequence();
+        setTimeout(() => {
+          appendLine('[00:00:09.200] End of transmission.');
+          appendLine('[00:00:09.310] Happy compilation day (:');
+        }, 9000);
+      }, 800);
+    }
+  }
+}
+
+window.addEventListener('scroll', () => {
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
+    loadMore();
+  }
+});
+
+addInitialLines();
+</script>
+</body>
+</html>
