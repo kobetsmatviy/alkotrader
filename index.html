@@ -15,7 +15,6 @@
   }
   .line {
     opacity: 0;
-    white-space: pre;
     transform: translateY(5px);
   }
   .visible {
@@ -33,11 +32,22 @@
     width: 8px;
     height: 16px;
     background-color: #00ff88;
-    margin-left: 4px;
     animation: blink 1s step-start infinite;
   }
   @keyframes blink {
     50% { opacity: 0; }
+  }
+
+  @media (max-width: 768px) {
+    #terminal {
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+      gap: 10px;
+    }
+    #cursor {
+      margin-top: 10px;
+    }
   }
 </style>
 </head>
@@ -56,8 +66,8 @@ const timeline = [
   '[00:00:00.001] Connecting to Alkotrader Terminal',
   '[00:00:01.018] Ping: 39ms',
   '[00:00:01.522] Loading alkotrader wisdom cache...',
-  '[00:00:01.522] Scroll down to load more',
   '[00:00:01.714] Quote: "Markets are drunk. Stay sober."',
+  '[00:00:01.522] Scroll down to load more',
   '[00:00:02.100] Quote: "If you need to think — you\'re already late."',
   '[00:00:02.500] Quote: "Exchanges don\'t crash. They reveal your assumptions."',
   '[00:00:02.900] Quote: "Latency is truth."',
@@ -162,7 +172,7 @@ window.addEventListener('touchend', (e) => {
 
 /* ---------------- autoplay ---------------- */
 
-function autoplayInitialLines(count = 4, delay = 700) {
+function autoplayInitialLines(count = 5, delay = 700) {
   let shown = 0;
 
   function step() {
@@ -188,7 +198,7 @@ function autoplayInitialLines(count = 4, delay = 700) {
 /* ---------------- start ---------------- */
 
 window.addEventListener('load', () => {
-  autoplayInitialLines(4, 700);
+  autoplayInitialLines(5, 700);
 });
 </script>
 </body>
