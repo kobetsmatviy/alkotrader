@@ -54,8 +54,9 @@ const terminal = document.getElementById('terminal');
 
 const timeline = [
   '[00:00:00.001] Connecting to Alkotrader Terminal',
-  '[00:00:01.018] Ping: 18ms',
+  '[00:00:01.018] Ping: 39ms',
   '[00:00:01.522] Loading alkotrader wisdom cache...',
+  '[00:00:01.522] Scroll down to load more',
   '[00:00:01.714] Quote: "Markets are drunk. Stay sober."',
   '[00:00:02.100] Quote: "If you need to think — you\'re already late."',
   '[00:00:02.500] Quote: "Exchanges don\'t crash. They reveal your assumptions."',
@@ -64,12 +65,15 @@ const timeline = [
   '[00:00:04.000] [Language detected...]',
   '[00:00:09.200] End of transmission.',
   '[00:00:04.000] [Audio signal detected...]',
-  '[00:00:09.310] Happy compilation day (:'
+  '[00:00:09.310] Happy compilation day (:)'
 ];
 
 let lineIndex = 0;
 let hasTriggeredAudio = false;
 let canScroll = true;
+let isAutoplaying = true;
+
+/* ---------------- core UI ---------------- */
 
 function appendLine(text) {
   const line = document.createElement('div');
@@ -81,42 +85,111 @@ function appendLine(text) {
 
 function removeLastLine() {
   const lines = terminal.querySelectorAll('.line.visible');
-  if (lines.length > 0) {
-    const last = lines[lines.length - 1];
-    last.classList.remove('visible');
-    last.classList.add('hidden-up');
-    setTimeout(() => last.remove(), 400);
-  }
+  if (!lines.length) return;
+
+  const last = lines[lines.length - 1];
+  last.classList.remove('visible');
+  last.classList.add('hidden-up');
+  setTimeout(() => last.remove(), 400);
 }
+
+/* ---------------- audio ---------------- */
 
 function playSequence() {
   if (hasTriggeredAudio) return;
   hasTriggeredAudio = true;
+
   const a1 = document.getElementById('a1');
   const a2 = document.getElementById('a2');
   const a3 = document.getElementById('a3');
+
   a1.play();
   a1.onended = () => setTimeout(() => a2.play(), 1500);
   a2.onended = () => setTimeout(() => a3.play(), 2000);
 }
 
-function handleScrollEvent(e) {
-  if (!canScroll) return;
-  canScroll = false;
-  setTimeout(() => canScroll = true, 400);
+/* ---------------- unified scroll engine ---------------- */
 
-  if (e.deltaY > 0 && lineIndex < timeline.length) {
+function processScroll(deltaY) {
+  if (isAutoplaying) return;
+  if (!canScroll) return;
+
+  canScroll = false;
+  setTimeout(() => (canScroll = true), 400);
+
+  if (deltaY > 0 && lineIndex < timeline.length) {
     appendLine(timeline[lineIndex]);
-    if (timeline[lineIndex].includes('[Audio signal detected...]')) playSequence();
+    if (timeline[lineIndex].includes('[Audio signal detected...]')) {
+      playSequence();
+    }
     lineIndex++;
-  } 
-  else if (e.deltaY < 0 && lineIndex > 0) {
+  } else if (deltaY < 0 && lineIndex > 0) {
     lineIndex--;
     removeLastLine();
   }
 }
 
-window.addEventListener('wheel', handleScrollEvent, { passive: true });
+/* ---------------- desktop wheel ---------------- */
+
+function handleWheel(e) {
+  processScroll(e.deltaY);
+}
+
+window.addEventListener('wheel', handleWheel, { passive: true });
+
+/* ---------------- mobile touch ---------------- */
+
+let touchStartY = null;
+
+window.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+window.addEventListener('touchend', (e) => {
+  if (touchStartY === null) return;
+
+  const touchEndY = e.changedTouches[0].clientY;
+  const deltaY = touchStartY - touchEndY;
+
+  // поріг чутливості
+  if (Math.abs(deltaY) > 30) {
+    processScroll(deltaY);
+  }
+
+  touchStartY = null;
+}, { passive: true });
+
+/* ---------------- autoplay ---------------- */
+
+function autoplayInitialLines(count = 4, delay = 700) {
+  let shown = 0;
+
+  function step() {
+    if (shown >= count || lineIndex >= timeline.length) {
+      isAutoplaying = false;
+      return;
+    }
+
+    appendLine(timeline[lineIndex]);
+    if (timeline[lineIndex].includes('[Audio signal detected...]')) {
+      playSequence();
+    }
+
+    lineIndex++;
+    shown++;
+
+    setTimeout(step, delay);
+  }
+
+  step();
+}
+
+/* ---------------- start ---------------- */
+
+window.addEventListener('load', () => {
+  autoplayInitialLines(4, 700);
+});
 </script>
 </body>
 </html>
