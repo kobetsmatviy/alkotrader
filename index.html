@@ -88,7 +88,7 @@ const timeline = [
   'Ping: 39ys',
   'Scroll down to load more',
   'Loading alkotrader wisdom cache...',
-  'Wisdom: «Markets are drunk. Stay sober»',
+  '«Markets are drunk. Stay sober»',
   '[Language model loaded]',
   '«Сегодня самый херовый день для трейдинга #криптожопа»',
   '[Audio signal detected]',
@@ -121,6 +121,20 @@ const audioMap = {
   18: 'a11'
 };
 
+
+const quoteLinks = {
+  6:  'https://t.me/alko_trading/243',
+  8:  'https://t.me/alko_trading/239',
+  9:  'https://t.me/alko_trading/480',
+  10: 'https://t.me/alko_trading/414',
+  11: 'https://t.me/alko_trading/1362',
+  12: 'https://t.me/alko_trading/351',
+  13: 'https://t.me/alko_trading/1215',
+  14: 'https://t.me/alko_trading/448',
+  15: 'https://t.me/alko_trading/410',
+  16: 'https://t.me/alko_trading/349'
+};
+
 /* ---------- STATE ---------- */
 
 let lineIndex = 0;
@@ -130,7 +144,7 @@ let waitingForStart = true;
 let currentAudio = null;
 let startLineElement = null;
 
-/* ---------- DEVICE DETECT ---------- */
+/* ---------- DEVICE ---------- */
 
 const isTouchDevice =
   'ontouchstart' in window ||
@@ -141,6 +155,12 @@ const isTouchDevice =
 function getLocalTimestamp() {
   const n = new Date();
   return `[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}.${String(n.getMilliseconds()).padStart(3,'0')}]`;
+}
+
+/* ---------- STICK TO BOTTOM ---------- */
+
+function stickToBottom() {
+  terminal.scrollTop = terminal.scrollHeight;
 }
 
 /* ---------- UI ---------- */
@@ -154,10 +174,38 @@ function appendLine(text) {
   time.textContent = getLocalTimestamp() + ' ';
 
   line.appendChild(time);
-  line.appendChild(document.createTextNode(text));
+
+  const textNode = document.createElement('span');
+  textNode.textContent = text;
+  line.appendChild(textNode);
+
+  // 🔗 кнопка прямої згадки
+  const link = quoteLinks[lineIndex];
+  if (link) {
+    const btn = document.createElement('a');
+    btn.href = link;
+    btn.target = '_blank';
+    btn.rel = 'noopener noreferrer';
+    btn.textContent = ' @alko_trading';
+
+    btn.style.marginLeft = '8px';
+    btn.style.color = '#00ff88';
+    btn.style.textDecoration = 'none';
+    btn.style.opacity = '0.6';
+    btn.style.fontSize = '14px';
+
+    btn.addEventListener('mouseenter', () => btn.style.opacity = '1');
+    btn.addEventListener('mouseleave', () => btn.style.opacity = '0.6');
+
+    line.appendChild(btn);
+  }
+
   terminal.appendChild(line);
 
-  setTimeout(() => line.classList.add('visible'), 50);
+  setTimeout(() => {
+    line.classList.add('visible');
+    stickToBottom();
+  }, 50);
 }
 
 function removeLastLine() {
@@ -167,7 +215,11 @@ function removeLastLine() {
   const last = lines[lines.length - 1];
   last.classList.remove('visible');
   last.classList.add('hidden-up');
-  setTimeout(() => last.remove(), 400);
+
+  setTimeout(() => {
+    last.remove();
+    stickToBottom();
+  }, 400);
 }
 
 /* ---------- AUDIO ENGINE ---------- */
@@ -193,7 +245,7 @@ function playAudioForIndex(index) {
   audio.play();
 }
 
-/* ---------- SCROLL ENGINE ---------- */
+/* ---------- CORE SCROLL LOGIC ---------- */
 
 function processScroll(deltaY) {
   if (waitingForStart) return;
@@ -207,7 +259,7 @@ function processScroll(deltaY) {
     appendLine(timeline[lineIndex]);
     playAudioForIndex(lineIndex);
     lineIndex++;
-  } 
+  }
   else if (deltaY < 0 && lineIndex > 0) {
     lineIndex--;
     removeLastLine();
@@ -217,12 +269,12 @@ function processScroll(deltaY) {
 
 /* ---------- INPUTS ---------- */
 
-// Desktop wheel
+// Desktop
 window.addEventListener('wheel', e => {
   processScroll(e.deltaY);
 }, { passive: true });
 
-// Mobile swipe
+// Mobile
 let touchStartY = null;
 
 window.addEventListener('touchstart', e => {
@@ -265,13 +317,10 @@ function autoplayInitialLines(count = 3, delay = 700) {
 function showStartPrompt() {
   const line = document.createElement('div');
   line.className = 'line visible';
-
-  line.textContent = isTouchDevice
-    ? 'Tap to continue'
-    : 'Press SPACE';
-
+  line.textContent = isTouchDevice ? 'Tap to continue' : 'Press SPACE';
   terminal.appendChild(line);
   startLineElement = line;
+  stickToBottom();
 }
 
 function startSession() {
@@ -280,7 +329,10 @@ function startSession() {
 
   if (startLineElement) {
     startLineElement.classList.add('hidden-up');
-    setTimeout(() => startLineElement.remove(), 400);
+    setTimeout(() => {
+      startLineElement.remove();
+      stickToBottom();
+    }, 400);
   }
 
   autoplayInitialLines(3, 700);
