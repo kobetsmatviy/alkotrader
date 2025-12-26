@@ -17,6 +17,9 @@
     opacity: 0;
     transform: translateY(5px);
   }
+  .time {
+    color: #1a995e;
+  }
   .visible {
     opacity: 1;
     transform: translateY(0);
@@ -33,6 +36,14 @@
     height: 16px;
     background-color: #00ff88;
     animation: blink 1s step-start infinite;
+  }
+  ::selection {
+    background-color: #00ff88;
+    color: #111;
+  }
+  ::-moz-selection {
+    background-color: #00ff88;
+    color: #111;
   }
   @keyframes blink {
     50% { opacity: 0; }
@@ -55,41 +66,89 @@
 <div id="terminal"></div>
 <div id="cursor"></div>
 
-<audio id="a1" src="audio/mentor1.mp3"></audio>
-<audio id="a2" src="audio/mentor2.mp3"></audio>
-<audio id="a3" src="audio/mentor3.mp3"></audio>
+<audio id="a1" src="a1.mp3"></audio>
+<audio id="a2" src="a2.mp3"></audio>
+<audio id="a3" src="a3.mp3"></audio>
+<audio id="a4" src="a4.mp3"></audio>
+<audio id="a5" src="a5.mp3"></audio>
+<audio id="a6" src="a6.mp3"></audio>
+<audio id="a7" src="a7.mp3"></audio>
+<audio id="a8" src="a8.mp3"></audio>
+<audio id="a9" src="a9.mp3"></audio>
+<audio id="a10" src="lost_connection.mp3"></audio>
+<audio id="a11" src="happy_day.mp3"></audio>
 
 <script>
 const terminal = document.getElementById('terminal');
 
+/* ---------- CONTENT ---------- */
+
 const timeline = [
-  '[00:00:00.001] Connecting to Alkotrader Terminal',
-  '[00:00:01.018] Ping: 39ms',
-  '[00:00:01.522] Loading alkotrader wisdom cache...',
-  '[00:00:01.714] Quote: "Markets are drunk. Stay sober."',
-  '[00:00:01.522] Scroll down to load more',
-  '[00:00:02.100] Quote: "If you need to think — you\'re already late."',
-  '[00:00:02.500] Quote: "Exchanges don\'t crash. They reveal your assumptions."',
-  '[00:00:02.900] Quote: "Latency is truth."',
-  '[00:00:03.300] Quote: "Speed hides everything, until it doesn\'t."',
-  '[00:00:04.000] [Language detected...]',
-  '[00:00:09.200] End of transmission.',
-  '[00:00:04.000] [Audio signal detected...]',
-  '[00:00:09.310] Happy compilation day (:'
+  'Connecting to Alkotrader Terminal',
+  'Ping: 39ys',
+  'Scroll down to load more',
+  'Loading alkotrader wisdom cache...',
+  'Wisdom: «Markets are drunk. Stay sober»',
+  '[Language model loaded]',
+  '«Сегодня самый херовый день для трейдинга #криптожопа»',
+  '[Audio signal detected]',
+  '«Ну ничего, решаемо, надо просто подарить бинансу 25 BNB и попросить менеджера...»',
+  '«Я никогда в жизни ни разу ни на одном проекте не использовал оператор switch. Считаю, что он от лукавого»',
+  '«Решил заморочиться и попробовать обучить нейросеть… Как вы уже догадались, нихерашечки не получилось»',
+  '«Только я купил сеть HK <=> TOKYO 20 ms, как снова нарисовались китайцы...»',
+  '«Биржа emirex сделана на тильде. К такому даже меня жизнь не готовила»',
+  '«Крипта и рэп пробивают дно»',
+  '«Председателя совета директоров Deutsche Bank зовут мистер Deutschescam. ДойчеСКАМ»',
+  '«Биржа kuna.io обновилась и нахрен выключила все свое API. 2023й йопта»',
+  '«Лучше б падала уже эта крипта, чем стояла на месте»',
+  '[Lost connection to wisdom]',
+  'Happy compilation day (:'
 ];
 
+/* ---------- AUDIO MAP ---------- */
+
+const audioMap = {
+  8: 'a1',
+  9: 'a2',
+  10: 'a3',
+  11: 'a4',
+  12: 'a5',
+  13: 'a6',
+  14: 'a7',
+  15: 'a8',
+  16: 'a9',
+  17: 'a10',
+  18: 'a11'
+};
+
+/* ---------- STATE ---------- */
+
 let lineIndex = 0;
-let hasTriggeredAudio = false;
 let canScroll = true;
 let isAutoplaying = true;
+let currentAudio = null;
 
-/* ---------------- core UI ---------------- */
+/* ---------- TIME ---------- */
+
+function getLocalTimestamp() {
+  const n = new Date();
+  return `[${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}.${String(n.getMilliseconds()).padStart(3,'0')}]`;
+}
+
+/* ---------- UI ---------- */
 
 function appendLine(text) {
   const line = document.createElement('div');
   line.className = 'line';
-  line.textContent = text;
+
+  const time = document.createElement('span');
+  time.className = 'time';
+  time.textContent = getLocalTimestamp() + ' ';
+
+  line.appendChild(time);
+  line.appendChild(document.createTextNode(text));
   terminal.appendChild(line);
+
   setTimeout(() => line.classList.add('visible'), 50);
 }
 
@@ -103,88 +162,83 @@ function removeLastLine() {
   setTimeout(() => last.remove(), 400);
 }
 
-/* ---------------- audio ---------------- */
+/* ---------- AUDIO ENGINE ---------- */
 
-function playSequence() {
-  if (hasTriggeredAudio) return;
-  hasTriggeredAudio = true;
-
-  const a1 = document.getElementById('a1');
-  const a2 = document.getElementById('a2');
-  const a3 = document.getElementById('a3');
-
-  a1.play();
-  a1.onended = () => setTimeout(() => a2.play(), 1500);
-  a2.onended = () => setTimeout(() => a3.play(), 2000);
+function stopCurrentAudio() {
+  if (!currentAudio) return;
+  currentAudio.pause();
+  currentAudio.currentTime = 0;
+  currentAudio = null;
 }
 
-/* ---------------- unified scroll engine ---------------- */
+function playAudioForIndex(index) {
+  stopCurrentAudio();
+
+  const audioId = audioMap[index];
+  if (!audioId) return;
+
+  const audio = document.getElementById(audioId);
+  if (!audio) return;
+
+  currentAudio = audio;
+  audio.currentTime = 0;
+  audio.play();
+}
+
+/* ---------- SCROLL ENGINE ---------- */
 
 function processScroll(deltaY) {
   if (isAutoplaying) return;
   if (!canScroll) return;
 
   canScroll = false;
-  setTimeout(() => (canScroll = true), 400);
+  setTimeout(() => (canScroll = true), 300);
 
   if (deltaY > 0 && lineIndex < timeline.length) {
     appendLine(timeline[lineIndex]);
-    if (timeline[lineIndex].includes('[Audio signal detected...]')) {
-      playSequence();
-    }
+    playAudioForIndex(lineIndex);
     lineIndex++;
-  } else if (deltaY < 0 && lineIndex > 0) {
+  }
+  else if (deltaY < 0 && lineIndex > 0) {
     lineIndex--;
     removeLastLine();
+    playAudioForIndex(lineIndex - 1);
   }
 }
 
-/* ---------------- desktop wheel ---------------- */
+/* ---------- DESKTOP ---------- */
 
-function handleWheel(e) {
+window.addEventListener('wheel', e => {
   processScroll(e.deltaY);
-}
+}, { passive: true });
 
-window.addEventListener('wheel', handleWheel, { passive: true });
-
-/* ---------------- mobile touch ---------------- */
+/* ---------- MOBILE ---------- */
 
 let touchStartY = null;
 
-window.addEventListener('touchstart', (e) => {
-  if (e.touches.length !== 1) return;
+window.addEventListener('touchstart', e => {
   touchStartY = e.touches[0].clientY;
 }, { passive: true });
 
-window.addEventListener('touchend', (e) => {
-  if (touchStartY === null) return;
-
-  const touchEndY = e.changedTouches[0].clientY;
-  const deltaY = touchStartY - touchEndY;
-
-  // поріг чутливості
-  if (Math.abs(deltaY) > 30) {
-    processScroll(deltaY);
-  }
-
+window.addEventListener('touchend', e => {
+  const deltaY = touchStartY - e.changedTouches[0].clientY;
+  if (Math.abs(deltaY) > 30) processScroll(deltaY);
   touchStartY = null;
 }, { passive: true });
 
-/* ---------------- autoplay ---------------- */
+/* ---------- AUTOPLAY ---------- */
 
-function autoplayInitialLines(count = 5, delay = 700) {
+function autoplayInitialLines(count = 3, delay = 700) {
   let shown = 0;
 
   function step() {
-    if (shown >= count || lineIndex >= timeline.length) {
+    if (shown >= count) {
       isAutoplaying = false;
       return;
     }
 
     appendLine(timeline[lineIndex]);
-    if (timeline[lineIndex].includes('[Audio signal detected...]')) {
-      playSequence();
-    }
+    playAudioForIndex(lineIndex);
 
     lineIndex++;
     shown++;
@@ -195,11 +249,13 @@ function autoplayInitialLines(count = 5, delay = 700) {
   step();
 }
 
-/* ---------------- start ---------------- */
+/* ---------- START ---------- */
 
 window.addEventListener('load', () => {
-  autoplayInitialLines(5, 700);
+  autoplayInitialLines(3, 700);
 });
 </script>
+
+
 </body>
 </html>
