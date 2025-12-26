@@ -86,14 +86,14 @@ const terminal = document.getElementById('terminal');
 const timeline = [
   'Connecting to Alkotrader Terminal',
   'Ping: 39ys',
-  'Scroll down to load more',
   'Loading alkotrader wisdom cache...',
   'Wisdom: «Markets are drunk. Stay sober»',
+  'Scroll down to load more',
   '[Language model loaded]',
   '«Сегодня самый херовый день для трейдинга #криптожопа»',
   '[Audio signal detected]',
-  '«Ну ничего, решаемо, надо просто подарить бинансу 25 BNB и попросить менеджера...»',
   '«Я никогда в жизни ни разу ни на одном проекте не использовал оператор switch. Считаю, что он от лукавого»',
+  '«Ну ничего, решаемо, надо просто подарить бинансу 25 BNB и попросить менеджера...»',
   '«Решил заморочиться и попробовать обучить нейросеть… Как вы уже догадались, нихерашечки не получилось»',
   '«Только я купил сеть HK <=> TOKYO 20 ms, как снова нарисовались китайцы...»',
   '«Биржа emirex сделана на тильде. К такому даже меня жизнь не готовила»',
@@ -125,8 +125,16 @@ const audioMap = {
 
 let lineIndex = 0;
 let canScroll = true;
-let isAutoplaying = true;
+let isAutoplaying = false;
+let waitingForStart = true;
 let currentAudio = null;
+let startLineElement = null;
+
+/* ---------- DEVICE DETECT ---------- */
+
+const isTouchDevice =
+  'ontouchstart' in window ||
+  navigator.maxTouchPoints > 0;
 
 /* ---------- TIME ---------- */
 
@@ -188,6 +196,7 @@ function playAudioForIndex(index) {
 /* ---------- SCROLL ENGINE ---------- */
 
 function processScroll(deltaY) {
+  if (waitingForStart) return;
   if (isAutoplaying) return;
   if (!canScroll) return;
 
@@ -198,7 +207,7 @@ function processScroll(deltaY) {
     appendLine(timeline[lineIndex]);
     playAudioForIndex(lineIndex);
     lineIndex++;
-  }
+  } 
   else if (deltaY < 0 && lineIndex > 0) {
     lineIndex--;
     removeLastLine();
@@ -206,21 +215,23 @@ function processScroll(deltaY) {
   }
 }
 
-/* ---------- DESKTOP ---------- */
+/* ---------- INPUTS ---------- */
 
+// Desktop wheel
 window.addEventListener('wheel', e => {
   processScroll(e.deltaY);
 }, { passive: true });
 
-/* ---------- MOBILE ---------- */
-
+// Mobile swipe
 let touchStartY = null;
 
 window.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) return;
   touchStartY = e.touches[0].clientY;
 }, { passive: true });
 
 window.addEventListener('touchend', e => {
+  if (touchStartY === null) return;
   const deltaY = touchStartY - e.changedTouches[0].clientY;
   if (Math.abs(deltaY) > 30) processScroll(deltaY);
   touchStartY = null;
@@ -229,6 +240,7 @@ window.addEventListener('touchend', e => {
 /* ---------- AUTOPLAY ---------- */
 
 function autoplayInitialLines(count = 3, delay = 700) {
+  isAutoplaying = true;
   let shown = 0;
 
   function step() {
@@ -239,7 +251,6 @@ function autoplayInitialLines(count = 3, delay = 700) {
 
     appendLine(timeline[lineIndex]);
     playAudioForIndex(lineIndex);
-
     lineIndex++;
     shown++;
 
@@ -249,10 +260,51 @@ function autoplayInitialLines(count = 3, delay = 700) {
   step();
 }
 
-/* ---------- START ---------- */
+/* ---------- START PROMPT ---------- */
+
+function showStartPrompt() {
+  const line = document.createElement('div');
+  line.className = 'line visible';
+
+  line.textContent = isTouchDevice
+    ? 'Tap to continue'
+    : 'Press SPACE';
+
+  terminal.appendChild(line);
+  startLineElement = line;
+}
+
+function startSession() {
+  if (!waitingForStart) return;
+  waitingForStart = false;
+
+  if (startLineElement) {
+    startLineElement.classList.add('hidden-up');
+    setTimeout(() => startLineElement.remove(), 400);
+  }
+
+  autoplayInitialLines(3, 700);
+}
+
+/* ---------- START EVENTS ---------- */
+
+if (isTouchDevice) {
+  window.addEventListener('touchend', () => {
+    if (waitingForStart) startSession();
+  }, { once: true });
+} else {
+  window.addEventListener('keydown', e => {
+    if (waitingForStart && e.code === 'Space') {
+      e.preventDefault();
+      startSession();
+    }
+  });
+}
+
+/* ---------- INIT ---------- */
 
 window.addEventListener('load', () => {
-  autoplayInitialLines(3, 700);
+  showStartPrompt();
 });
 </script>
 
