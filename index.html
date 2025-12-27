@@ -50,11 +50,24 @@
   }
 
   @media (max-width: 768px) {
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
     #terminal {
       display: flex;
       flex-direction: column;
-      font-size: 14px;
+      justify-content: flex-end;
+      max-height: 90vh;
+      padding-top: 0;
       gap: 10px;
+      font-size: 14px;
+      overflow: hidden;
     }
     #cursor {
       margin-top: 10px;
